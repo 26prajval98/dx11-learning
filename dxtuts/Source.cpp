@@ -37,7 +37,7 @@ void T::inc()
 	char buffer[10];
 	itoa(T::x, buffer, 10);
 	std::string str(buffer);
-	//MessageBox(NULL,(LPCWSTR)buffer, (LPCWSTR)buffer, S_OK);
+	MessageBox(NULL,(LPCWSTR)buffer, (LPCWSTR)buffer, S_OK);
 }
 
 // the entry point for any Windows program
@@ -92,13 +92,20 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	MSG msg;
 
 	// wait for the next message in the queue, store the result in 'msg'
-	while (GetMessage(&msg, NULL, 0, 0))
+	while (TRUE)
 	{
-		// translate keystroke messages into the right format
-		TranslateMessage(&msg);
+		if (PeekMessage(&msg, NULL, NULL, NULL, PM_REMOVE))
+		{
+			// translate keystroke messages into the right format
+			TranslateMessage(&msg);
 
-		// send the message to the WindowProc function
-		DispatchMessage(&msg);
+			// send the message to the WindowProc function
+			DispatchMessage(&msg);
+		}
+		else
+		{
+			// Game code or graphics code here
+		}
 	}
 
 	// return this part of the WM_QUIT message to Windows
