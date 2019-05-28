@@ -3,6 +3,7 @@
 #include <d3d11.h>
 #include <d3dx11.h>
 #include <d3dx10.h>
+#include <xnamath.h>
 
 // include the Direct3D Library file
 #pragma comment (lib, "d3d11.lib")
@@ -12,6 +13,20 @@
 
 #define SCREEN_WIDTH  1920
 #define SCREEN_HEIGHT 1080
+
+struct Vertex    //Overloaded Vertex Structure
+{
+	Vertex() {}
+	Vertex(float x, float y, float z)
+		: pos(x, y, z) {}
+
+	XMFLOAT3 pos;
+};
+
+D3D11_INPUT_ELEMENT_DESC layout[] =
+{
+	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+};
 
 // global declarations
 IDXGISwapChain *swapchain;             // the pointer to the swap chain interface
