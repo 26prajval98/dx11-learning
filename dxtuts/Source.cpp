@@ -13,19 +13,24 @@
 
 #define SCREEN_WIDTH  1680
 #define SCREEN_HEIGHT 1050
+#define VS_FILE L"Shaders.fx"
+#define PS_FILE L"Shaders.fx"
 
 struct Vertex    //Overloaded Vertex Structure
 {
 	Vertex() {}
-	Vertex(float x, float y, float z)
-		: pos(x, y, z) {}
+	Vertex(float x, float y, float z,
+		float cr, float cg, float cb, float ca)
+		: pos(x, y, z), color(cr, cg, cb, ca) {}
 
 	XMFLOAT3 pos;
+	XMFLOAT4 color;
 };
 
 D3D11_INPUT_ELEMENT_DESC layout[] =
 {
 	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 };
 
 UINT numElements = ARRAYSIZE(layout);
@@ -48,9 +53,8 @@ void InitD3D(HWND hWnd);    // sets up and initializes Direct3D
 void CleanD3D(void);        // closes Direct3D and releases memory
 void RenderFrame(void);
 bool InitScene();
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);		// the WindowProc function prototype
 
-// the WindowProc function prototype
-LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 
 // the entry point for any Windows program
@@ -212,8 +216,8 @@ void InitD3D(HWND hWnd)
 bool InitScene()
 {
 	//Compile Shaders from shader file
-	D3DX11CompileFromFile(L"Shaders.shader", 0, 0, "VS", "vs_5_0", 0, 0, 0, &VS_Buffer, 0, 0);
-	D3DX11CompileFromFile(L"Shaders.shader", 0, 0, "PS", "ps_5_0", 0, 0, 0, &PS_Buffer, 0, 0);
+	D3DX11CompileFromFile(VS_FILE, 0, 0, "VS", "vs_5_0", 0, 0, 0, &VS_Buffer, 0, 0);
+	D3DX11CompileFromFile(PS_FILE, 0, 0, "PS", "ps_5_0", 0, 0, 0, &PS_Buffer, 0, 0);
 
 	//Create the Shader Objects
 	dev->CreateVertexShader(VS_Buffer->GetBufferPointer(), VS_Buffer->GetBufferSize(), NULL, &VS);
@@ -226,9 +230,9 @@ bool InitScene()
 	//Create the vertex buffer
 	Vertex v[] =
 	{
-		Vertex(0.0f, 0.5f, 0.5f),
-		Vertex(0.5f, -0.5f, 0.5f),
-		Vertex(-0.5f, -0.5f, 0.5f),
+		Vertex(0.0f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f),
+		Vertex(0.5f, -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f),
+		Vertex(-0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.1f, 1.0f),
 	};
 
 	D3D11_BUFFER_DESC vertexBufferDesc;
