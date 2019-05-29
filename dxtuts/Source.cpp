@@ -11,8 +11,8 @@
 #pragma comment (lib, "d3dx10.lib")
 
 
-#define SCREEN_WIDTH  1920
-#define SCREEN_HEIGHT 1080
+#define SCREEN_WIDTH  1680
+#define SCREEN_HEIGHT 1050
 
 struct Vertex    //Overloaded Vertex Structure
 {
@@ -28,16 +28,27 @@ D3D11_INPUT_ELEMENT_DESC layout[] =
 	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 };
 
+UINT numElements = ARRAYSIZE(layout);
+
 // global declarations
-IDXGISwapChain *swapchain;             // the pointer to the swap chain interface
-ID3D11Device *dev;                     // the pointer to our Direct3D device interface
-ID3D11DeviceContext *devcon;           // the pointer to our Direct3D device context
-ID3D11RenderTargetView *backbuffer;    // global declaration
+IDXGISwapChain *swapchain;				// the pointer to the swap chain interface
+ID3D11Device *dev;						// the pointer to our Direct3D device interface
+ID3D11DeviceContext *devcon;			// the pointer to our Direct3D device context
+ID3D11RenderTargetView *backbuffer;		// global declaration
+ID3D11Buffer *vertexBuffer;				// Vertex Buffer
+ID3D11VertexShader* VS;					// Vertex Shader
+ID3D11PixelShader* PS;					// Pixel Shader
+ID3D10Blob* VS_Buffer;					// VS buffer
+ID3D10Blob* PS_Buffer;					// PS buffer
+ID3D11InputLayout* vertLayout;			// Input Layout
+
 
 // function prototypes
 void InitD3D(HWND hWnd);    // sets up and initializes Direct3D
 void CleanD3D(void);        // closes Direct3D and releases memory
 void RenderFrame(void);
+bool InitScene();
+
 // the WindowProc function prototype
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -103,8 +114,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 			// Run game code here
 			// ...
 			// ...
+			RenderFrame();
 		}
-		RenderFrame();
 	}
 
 	// clean up DirectX and COM
@@ -194,6 +205,75 @@ void InitD3D(HWND hWnd)
 	viewport.Height = SCREEN_HEIGHT;
 
 	devcon->RSSetViewports(1, &viewport);
+
+	InitScene();
+}
+
+bool InitScene()
+{
+	//Compile Shaders from shader file
+	D3DX11CompileFromFile(L"Shaders.shader", 0, 0, "VS", "vs_5_0", 0, 0, 0, &VS_Buffer, 0, 0);
+	D3DX11CompileFromFile(L"Shaders.shader", 0, 0, "PS", "ps_5_0", 0, 0, 0, &PS_Buffer, 0, 0);
+
+	//Create the Shader Objects
+	dev->CreateVertexShader(VS_Buffer->GetBufferPointer(), VS_Buffer->GetBufferSize(), NULL, &VS);
+	dev->CreatePixelShader(PS_Buffer->GetBufferPointer(), PS_Buffer->GetBufferSize(), NULL, &PS);
+
+	//Set Vertex and Pixel Shaders
+	devcon->VSSetShader(VS, 0, 0);
+	devcon->PSSetShader(PS, 0, 0);
+
+	//Create the vertex buffer
+	Vertex v[] =
+	{
+		Vertex(0.0f, 0.5f, 0.5f),
+		Vertex(0.5f, -0.5f, 0.5f),
+		Vertex(-0.5f, -0.5f, 0.5f),
+	};
+
+	D3D11_BUFFER_DESC vertexBufferDesc;
+	ZeroMemory(&vertexBufferDesc, sizeof(vertexBufferDesc));
+
+	vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	vertexBufferDesc.ByteWidth = sizeof(Vertex) * 3;
+	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vertexBufferDesc.CPUAccessFlags = 0;
+	vertexBufferDesc.MiscFlags = 0;
+
+	D3D11_SUBRESOURCE_DATA vertexBufferData;
+
+	ZeroMemory(&vertexBufferData, sizeof(vertexBufferData));
+	vertexBufferData.pSysMem = v;
+	dev->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &vertexBuffer);
+
+	//Set the vertex buffer
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	devcon->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+
+	//Create the Input Layout
+	dev->CreateInputLayout(layout, numElements, VS_Buffer->GetBufferPointer(),
+		VS_Buffer->GetBufferSize(), &vertLayout);
+
+	//Set the Input Layout
+	devcon->IASetInputLayout(vertLayout);
+
+	//Set Primitive Topology
+	devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	//Create the Viewport
+	D3D11_VIEWPORT viewport;
+	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
+
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+	viewport.Width = SCREEN_WIDTH;
+	viewport.Height = SCREEN_HEIGHT;
+
+	//Set the Viewport
+	devcon->RSSetViewports(1, &viewport);
+
+	return true;
 }
 
 // this is the function used to render a single frame
@@ -203,6 +283,7 @@ void RenderFrame(void)
 	devcon->ClearRenderTargetView(backbuffer, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
 
 	// do 3D rendering on the back buffer here
+	devcon->Draw(3, 0);
 
 	// switch the back buffer and the front buffer
 	swapchain->Present(0, 0);
@@ -217,4 +298,10 @@ void CleanD3D(void)
 	dev->Release();
 	devcon->Release();
 	backbuffer->Release();
+	vertexBuffer->Release();
+	VS->Release();
+	PS->Release();
+	VS_Buffer->Release();
+	PS_Buffer->Release();
+	vertLayout->Release();
 }
