@@ -13,8 +13,8 @@
 
 #define SCREEN_WIDTH  1680
 #define SCREEN_HEIGHT 1050
-#define VS_FILE L"VertexShader.fx"
-#define PS_FILE L"PixelShader.fx"
+#define VS_FILE L"Shader.fx"
+#define PS_FILE L"Shader.fx"
 
 struct Vertex    //Overloaded Vertex Structure
 {
@@ -30,7 +30,7 @@ struct Vertex    //Overloaded Vertex Structure
 D3D11_INPUT_ELEMENT_DESC layout[] =
 {
 	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 };
 
 UINT numElements = ARRAYSIZE(layout);
@@ -127,6 +127,13 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	return msg.wParam;
 }
+
+
+
+
+/***************************************************************************************************************************************************/
+
+
 
 
 // this is the main message handler for the program
