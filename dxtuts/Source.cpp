@@ -384,7 +384,7 @@ void CleanD3D(void)
 
 void GenerateVertices(std::vector <Vertex> &vec, float factor)
 {
-	float yFac = 0.5f;
+	/*float yFac = 0.5f;
 	float xFac = yFac * factor;
 	float degree = 0;
 	float inc = 360.0 / POLYGON;
@@ -394,13 +394,24 @@ void GenerateVertices(std::vector <Vertex> &vec, float factor)
 		float rad = d2r(degree);
 		vec.push_back(Vertex(xFac * sin(rad), yFac * cos(rad), 0.0f, 1.0f, 0.0f, 0.0f, 1.0f));
 		degree += inc;
-	}
+	}*/
+
+	vec = {
+		Vertex(-1.0f, -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f),
+		Vertex(-1.0f, +1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f),
+		Vertex(+1.0f, +1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f),
+		Vertex(+1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 0.0f, 1.0f),
+		Vertex(-1.0f, -1.0f, +1.0f, 0.0f, 1.0f, 1.0f, 1.0f),
+		Vertex(-1.0f, +1.0f, +1.0f, 1.0f, 1.0f, 1.0f, 1.0f),
+		Vertex(+1.0f, +1.0f, +1.0f, 1.0f, 0.0f, 1.0f, 1.0f),
+		Vertex(+1.0f, -1.0f, +1.0f, 1.0f, 0.0f, 0.0f, 1.0f),
+	};
 }
 
 
 void GenerateIndices(std::vector <int> &indices)
 {	
-	int second = 1;
+	/*int second = 1;
 	while (second < POLYGON)
 	{
 		indices.push_back(0);
@@ -410,5 +421,31 @@ void GenerateIndices(std::vector <int> &indices)
 	}
 	indices.push_back(0);
 	indices.push_back(POLYGON);
-	indices.push_back(1);
+	indices.push_back(1);*/
+
+	indices = {
+		// front face
+		0, 1, 2,
+		0, 2, 3,
+
+		// back face
+		4, 6, 5,
+		4, 7, 6,
+
+		// left face
+		4, 5, 1,
+		4, 1, 0,
+
+		// right face
+		3, 2, 6,
+		3, 6, 7,
+
+		// top face
+		1, 5, 6,
+		1, 6, 2,
+
+		// bottom face
+		4, 0, 3,
+		4, 3, 7
+	};
 }
