@@ -13,8 +13,8 @@
 
 #define SCREEN_WIDTH  1680
 #define SCREEN_HEIGHT 1050
-#define VS_FILE L"Shaders.fx"
-#define PS_FILE L"Shaders.fx"
+#define VS_FILE L"VertexShader.fx"
+#define PS_FILE L"PixelShader.fx"
 
 struct Vertex    //Overloaded Vertex Structure
 {
