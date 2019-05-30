@@ -4,6 +4,9 @@
 #include <d3dx11.h>
 #include <d3dx10.h>
 #include <xnamath.h>
+#include <math.h>
+#include <vector>
+#include <stdio.h>
 
 // include the Direct3D Library file
 #pragma comment (lib, "d3d11.lib")
@@ -15,6 +18,8 @@
 #define SCREEN_HEIGHT 1050
 #define VS_FILE L"Shader.fx"
 #define PS_FILE L"Shader.fx"
+#define POLYGON 20
+#define M_PI 3.14159265358979323846
 
 struct Vertex    //Overloaded Vertex Structure
 {
@@ -41,21 +46,27 @@ ID3D11Device *dev;						// the pointer to our Direct3D device interface
 ID3D11DeviceContext *devcon;			// the pointer to our Direct3D device context
 ID3D11RenderTargetView *backbuffer;		// global declaration
 ID3D11Buffer *vertexBuffer;				// Vertex Buffer
+ID3D11Buffer *indexBuffer;				// Index Buffer
 ID3D11VertexShader* VS;					// Vertex Shader
 ID3D11PixelShader* PS;					// Pixel Shader
 ID3D10Blob* VS_Buffer;					// VS buffer
 ID3D10Blob* PS_Buffer;					// PS buffer
 ID3D11InputLayout* vertLayout;			// Input Layout
-
+ID3D11DepthStencilView* depthStencilView;	// Depth Views
+ID3D11Texture2D* depthStencilBuffer;		// Depth Buffers
 
 // function prototypes
 void InitD3D(HWND hWnd);    // sets up and initializes Direct3D
 void CleanD3D(void);        // closes Direct3D and releases memory
 void RenderFrame(void);
 bool InitScene();
+void GenerateVertices(std::vector <Vertex> &, float);
+void GenerateIndices(std::vector <int> &);
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);		// the WindowProc function prototype
 
-
+static double d2r(double d) {
+	return (d / 180.0) * ((double)M_PI);
+}
 
 // the entry point for any Windows program
 int WINAPI WinMain(HINSTANCE hInstance,
@@ -151,7 +162,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-
 // this function initializes and prepares Direct3D for use
 void InitD3D(HWND hWnd)
 {
@@ -160,7 +170,7 @@ void InitD3D(HWND hWnd)
 
 	// clear out the struct for use
 	ZeroMemory(&scd, sizeof(DXGI_SWAP_CHAIN_DESC));
-	
+
 	// fill the swap chain description struct
 	scd.BufferCount = 1;                                    // one back buffer
 	scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;     // use 32-bit color
@@ -169,7 +179,7 @@ void InitD3D(HWND hWnd)
 	scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;      // how swap chain is to be used
 	scd.OutputWindow = hWnd;                                // the window to be used
 	scd.SampleDesc.Count = 4;                               // how many multisamples
-	scd.Windowed = FALSE;                                    // windowed/full-screen mode
+	scd.Windowed = TRUE;                                    // windowed/full-screen mode
 	scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;     // allow full-screen switching
 
 	// create a device, device context and swap chain using the information in the scd struct
@@ -185,7 +195,7 @@ void InitD3D(HWND hWnd)
 		&dev,
 		NULL,
 		&devcon);
-	
+
 
 	/*
 		Set render targets
@@ -234,19 +244,45 @@ bool InitScene()
 	devcon->VSSetShader(VS, 0, 0);
 	devcon->PSSetShader(PS, 0, 0);
 
+	float factor = SCREEN_HEIGHT * 1.0 / SCREEN_WIDTH;
+
 	//Create the vertex buffer
-	Vertex v[] =
+	std::vector<Vertex> v =
 	{
-		Vertex(0.0f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f),
-		Vertex(0.5f, -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f),
-		Vertex(-0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.1f, 1.0f),
+		Vertex(0.0f * factor, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f),
 	};
+
+	GenerateVertices(v, factor);
+
+	std::vector<int> indices;
+
+	GenerateIndices(indices);
+
+	//This is for setting indices
+	D3D11_BUFFER_DESC indexBufferDesc;
+	ZeroMemory(&indexBufferDesc, sizeof(indexBufferDesc));
+
+	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	indexBufferDesc.ByteWidth = sizeof(Vertex) * 3 * (POLYGON + 1);
+	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	indexBufferDesc.CPUAccessFlags = 0;
+	indexBufferDesc.MiscFlags = 0;
+
+	D3D11_SUBRESOURCE_DATA indexBufferData;
+
+	ZeroMemory(&indexBufferData, sizeof(indexBufferData));
+	indexBufferData.pSysMem = &indices[0];
+	dev->CreateBuffer(&indexBufferDesc, &indexBufferData, &indexBuffer);
+
+	devcon->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+	//This is for setting vertices
 
 	D3D11_BUFFER_DESC vertexBufferDesc;
 	ZeroMemory(&vertexBufferDesc, sizeof(vertexBufferDesc));
 
 	vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	vertexBufferDesc.ByteWidth = sizeof(Vertex) * 3;
+	vertexBufferDesc.ByteWidth = sizeof(Vertex) * (POLYGON + 1);
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertexBufferDesc.CPUAccessFlags = 0;
 	vertexBufferDesc.MiscFlags = 0;
@@ -254,7 +290,7 @@ bool InitScene()
 	D3D11_SUBRESOURCE_DATA vertexBufferData;
 
 	ZeroMemory(&vertexBufferData, sizeof(vertexBufferData));
-	vertexBufferData.pSysMem = v;
+	vertexBufferData.pSysMem = (void *)&v[0];
 	dev->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &vertexBuffer);
 
 	//Set the vertex buffer
@@ -272,10 +308,33 @@ bool InitScene()
 	//Set Primitive Topology
 	devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+	//Describe our Depth/Stencil Buffer
+	D3D11_TEXTURE2D_DESC depthStencilDesc;
+	depthStencilDesc.Width = SCREEN_WIDTH;
+	depthStencilDesc.Height = SCREEN_HEIGHT;
+	depthStencilDesc.MipLevels = 1;
+	depthStencilDesc.ArraySize = 1;
+	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthStencilDesc.SampleDesc.Count = 1;
+	depthStencilDesc.SampleDesc.Quality = 0;
+	depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthStencilDesc.CPUAccessFlags = 0;
+	depthStencilDesc.MiscFlags = 0;
+
+	//Create depth stencil view
+	dev->CreateTexture2D(&depthStencilDesc, NULL, &depthStencilBuffer);
+	dev->CreateDepthStencilView(depthStencilBuffer, NULL, &depthStencilView);
+
+	//Bind to pipeline
+	devcon->OMSetRenderTargets(1, &backbuffer, depthStencilView);
+	
 	//Create the Viewport
 	D3D11_VIEWPORT viewport;
 	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
-
+	
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
 	viewport.Width = SCREEN_WIDTH;
@@ -292,9 +351,12 @@ void RenderFrame(void)
 {
 	// clear the back buffer to a deep blue
 	devcon->ClearRenderTargetView(backbuffer, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
+	
+	//Clear depth/stencil view
+	devcon->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	// do 3D rendering on the back buffer here
-	devcon->Draw(3, 0);
+	devcon->DrawIndexed(3 * POLYGON, 0, 0);
 
 	// switch the back buffer and the front buffer
 	swapchain->Present(0, 0);
@@ -315,4 +377,38 @@ void CleanD3D(void)
 	VS_Buffer->Release();
 	PS_Buffer->Release();
 	vertLayout->Release();
+	depthStencilView->Release();
+	depthStencilBuffer->Release();
+}
+
+
+void GenerateVertices(std::vector <Vertex> &vec, float factor)
+{
+	float yFac = 0.5f;
+	float xFac = yFac * factor;
+	float degree = 0;
+	float inc = 360.0 / POLYGON;
+	
+	while (degree <= 359.9999999)
+	{
+		float rad = d2r(degree);
+		vec.push_back(Vertex(xFac * sin(rad), yFac * cos(rad), 0.0f, 1.0f, 0.0f, 0.0f, 1.0f));
+		degree += inc;
+	}
+}
+
+
+void GenerateIndices(std::vector <int> &indices)
+{	
+	int second = 1;
+	while (second < POLYGON)
+	{
+		indices.push_back(0);
+		indices.push_back(second);
+		indices.push_back(second + 1);
+		second++;
+	}
+	indices.push_back(0);
+	indices.push_back(POLYGON);
+	indices.push_back(1);
 }
