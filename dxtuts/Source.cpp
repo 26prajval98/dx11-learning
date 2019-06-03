@@ -54,6 +54,7 @@ ID3D10Blob* PS_Buffer;					// PS buffer
 ID3D11InputLayout* vertLayout;			// Input Layout
 ID3D11DepthStencilView* depthStencilView;	// Depth Views
 ID3D11Texture2D* depthStencilBuffer;		// Depth Buffers
+ID3D11Buffer* cbPerObjectBuffer;		// Constant buffer
 
 // function prototypes
 void InitD3D(HWND hWnd);    // sets up and initializes Direct3D
@@ -63,6 +64,17 @@ bool InitScene();
 void GenerateVertices(std::vector <Vertex> &, float);
 void GenerateIndices(std::vector <int> &);
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);		// the WindowProc function prototype
+
+
+//Set spaces and camera
+XMMATRIX WVP;
+XMMATRIX World;
+XMMATRIX camView;
+XMMATRIX camProjection;
+
+XMVECTOR camPosition;
+XMVECTOR camTarget;
+XMVECTOR camUp;
 
 static double d2r(double d) {
 	return (d / 180.0) * ((double)M_PI);
@@ -343,6 +355,21 @@ bool InitScene()
 	//Set the Viewport
 	devcon->RSSetViewports(1, &viewport);
 
+	D3D11_BUFFER_DESC cbbd;
+	ZeroMemory(&cbbd, sizeof(D3D11_BUFFER_DESC));
+
+	cbbd.Usage = D3D11_USAGE_DEFAULT;
+	cbbd.ByteWidth = sizeof(cbPerObject);
+	cbbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cbbd.CPUAccessFlags = 0;
+	cbbd.MiscFlags = 0;
+
+	dev->CreateBuffer(&cbbd, NULL, &cbPerObjectBuffer);
+	camPosition = XMVectorSet(0.0f, 0.0f, -0.5f, 0.0f);
+	camTarget = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
+	camProjection = XMMatrixPerspectiveFovLH(0.4f*3.14f, (float)SCREEN_WIDTH/ SCREEN_HEIGHT, 1.0f, 1000.0f);
 	return true;
 }
 
@@ -354,6 +381,17 @@ void RenderFrame(void)
 	
 	//Clear depth/stencil view
 	devcon->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+	//Set the World/View/Projection matrix, then send it to constant buffer in effect file
+	World = XMMatrixIdentity();
+
+	WVP = World * camView * camProjection;
+
+	cbPerObj.WVP = XMMatrixTranspose(WVP);
+
+	devcon->UpdateSubresource(cbPerObjectBuffer, 0, NULL, &cbPerObj, 0, 0);
+
+	devcon->VSSetConstantBuffers(0, 1, &cbPerObjectBuffer);
 
 	// do 3D rendering on the back buffer here
 	devcon->DrawIndexed(3 * POLYGON, 0, 0);
@@ -379,7 +417,17 @@ void CleanD3D(void)
 	vertLayout->Release();
 	depthStencilView->Release();
 	depthStencilBuffer->Release();
+	cbPerObjectBuffer->Release();
 }
+
+
+//Create effects constant buffer's structure//
+struct cbPerObject
+{
+	XMMATRIX  WVP;
+};
+
+cbPerObject cbPerObj;
 
 
 void GenerateVertices(std::vector <Vertex> &vec, float factor)

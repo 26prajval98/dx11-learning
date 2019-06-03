@@ -1,3 +1,8 @@
+cbuffer cbPerObject
+{
+    float4x4 WVP;
+};
+
 struct PS_INPUT
 {
     float4 pos : SV_POSITION;
@@ -13,9 +18,8 @@ struct VS_INPUT
 PS_INPUT VS(VS_INPUT ip)
 {
     PS_INPUT op;
-    op.pos = ip.pos;
+    op.pos = mul(ip.pos, WVP);
     op.color = ip.color;
-
     return op;
 }
 
