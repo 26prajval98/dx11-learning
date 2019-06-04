@@ -28,6 +28,8 @@ ID3D11Buffer* cbPerObjectBuffer;
 ///////////////**************new**************////////////////////
 ID3D11ShaderResourceView* CubesTexture;
 ID3D11SamplerState* CubesTexSamplerState;
+ID3D11ShaderResourceView* CubesTexture2;
+ID3D11SamplerState* CubesTexSamplerState2;
 ///////////////**************new**************////////////////////
 
 //Global Declarations - Others//
@@ -461,7 +463,7 @@ bool InitScene()
 	D3D11_SAMPLER_DESC sampDesc;
 	ZeroMemory(&sampDesc, sizeof(sampDesc));
 	sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
 	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
 	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
@@ -470,6 +472,23 @@ bool InitScene()
 
 	//Create the Sample State
 	hr = d3d11Device->CreateSamplerState(&sampDesc, &CubesTexSamplerState);
+
+	D3DX11CreateShaderResourceViewFromFile(d3d11Device, L"xb.jpg",
+		NULL, NULL, &CubesTexture2, NULL);
+
+	// Describe the Sample State
+	D3D11_SAMPLER_DESC sampDesc2;
+	ZeroMemory(&sampDesc, sizeof(sampDesc2));
+	sampDesc2.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	sampDesc2.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc2.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc2.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc2.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	sampDesc2.MinLOD = 0;
+	sampDesc2.MaxLOD = D3D11_FLOAT32_MAX;
+
+	//Create the Sample State
+	hr = d3d11Device->CreateSamplerState(&sampDesc2, &CubesTexSamplerState2);
 	///////////////**************new**************////////////////////
 
 	return true;
@@ -521,6 +540,14 @@ void DrawScene()
 	///////////////**************new**************////////////////////
 	d3d11DevCon->PSSetShaderResources(0, 1, &CubesTexture);
 	d3d11DevCon->PSSetSamplers(0, 1, &CubesTexSamplerState);
+	
+	//Draw the first cube
+	d3d11DevCon->DrawIndexed(6, 0, 0);
+
+	d3d11DevCon->PSSetShaderResources(0, 1, &CubesTexture2);
+	d3d11DevCon->PSSetSamplers(0, 1, &CubesTexSamplerState2);
+
+	d3d11DevCon->DrawIndexed(6, 0, 0);
 	///////////////**************new**************////////////////////
 
 	//Draw the first cube
