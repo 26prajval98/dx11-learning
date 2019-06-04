@@ -37,8 +37,8 @@ LPCTSTR WndClassName = L"firstwindow";
 HWND hwnd = NULL;
 HRESULT hr;
 
-const int Width = 300;
-const int Height = 300;
+const int Width = 1080;
+const int Height = 1080;
 
 XMMATRIX WVP;
 XMMATRIX cube1World;
@@ -456,7 +456,7 @@ bool InitScene()
 	camProjection = XMMatrixPerspectiveFovLH(0.4f*3.14f, Width / Height, 1.0f, 1000.0f);
 
 	///////////////**************new**************////////////////////
-	hr = D3DX11CreateShaderResourceViewFromFile(d3d11Device, L"braynzar.jpg",
+	hr = D3DX11CreateShaderResourceViewFromFile(d3d11Device, L"kbit.jpg",
 		NULL, NULL, &CubesTexture, NULL);
 
 	// Describe the Sample State
@@ -512,15 +512,9 @@ void UpdateScene()
 	//Set cube1's world space using the transformations
 	cube1World = Translation * Rotation;
 
-	//Reset cube2World
-	cube2World = XMMatrixIdentity();
-
-	//Define cube2's world space matrix
-	Rotation = XMMatrixRotationAxis(rotaxis, -rot);
-	Scale = XMMatrixScaling(1.3f, 1.3f, 1.3f);
-
-	//Set cube2's world space matrix
-	cube2World = Rotation * Scale;
+	rotaxis = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+	Rotation = XMMatrixRotationAxis(rotaxis, rot);
+	cube1World = Rotation * cube1World;
 }
 
 void DrawScene()
@@ -542,28 +536,12 @@ void DrawScene()
 	d3d11DevCon->PSSetSamplers(0, 1, &CubesTexSamplerState);
 	
 	//Draw the first cube
-	d3d11DevCon->DrawIndexed(6, 0, 0);
+	d3d11DevCon->DrawIndexed(18, 0, 0);
 
 	d3d11DevCon->PSSetShaderResources(0, 1, &CubesTexture2);
 	d3d11DevCon->PSSetSamplers(0, 1, &CubesTexSamplerState2);
 
-	d3d11DevCon->DrawIndexed(6, 0, 0);
-	///////////////**************new**************////////////////////
-
-	//Draw the first cube
-	d3d11DevCon->DrawIndexed(36, 0, 0);
-
-	WVP = cube2World * camView * camProjection;
-	cbPerObj.WVP = XMMatrixTranspose(WVP);
-	d3d11DevCon->UpdateSubresource(cbPerObjectBuffer, 0, NULL, &cbPerObj, 0, 0);
-	d3d11DevCon->VSSetConstantBuffers(0, 1, &cbPerObjectBuffer);
-	///////////////**************new**************////////////////////
-	d3d11DevCon->PSSetShaderResources(0, 1, &CubesTexture);
-	d3d11DevCon->PSSetSamplers(0, 1, &CubesTexSamplerState);
-	///////////////**************new**************////////////////////
-
-	//Draw the second cube
-	d3d11DevCon->DrawIndexed(36, 0, 0);
+	d3d11DevCon->DrawIndexed(18, 18, 0);
 
 	//Present the backbuffer to the screen
 	SwapChain->Present(0, 0);
