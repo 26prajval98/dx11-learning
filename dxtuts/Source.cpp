@@ -9,6 +9,7 @@
 #include <d3dx11.h>
 #include <d3dx10.h>
 #include <xnamath.h>
+#include <string>
 
 //Global Declarations - Interfaces//
 IDXGISwapChain* SwapChain;
@@ -101,6 +102,9 @@ D3D11_INPUT_ELEMENT_DESC layout[] =
 };
 UINT numElements = ARRAYSIZE(layout);
 ///////////////**************new**************////////////////////
+
+
+int start = 0;
 
 int WINAPI WinMain(HINSTANCE hInstance,	//Main windows function
 	HINSTANCE hPrevInstance,
@@ -497,7 +501,7 @@ bool InitScene()
 void UpdateScene()
 {
 	//Keep the cubes rotating
-	rot += .0005f;
+	rot += .005f;
 	if (rot > 6.26f)
 		rot = 0.0f;
 
@@ -542,6 +546,37 @@ void DrawScene()
 	d3d11DevCon->PSSetSamplers(0, 1, &CubesTexSamplerState2);
 
 	d3d11DevCon->DrawIndexed(18, 18, 0);
+
+	// Saving	
+	ID3D11Resource* pSurface = nullptr;
+	renderTargetView->GetResource(&pSurface);
+
+	if (pSurface)
+	{
+		D3D11_TEXTURE2D_DESC desc;
+		ZeroMemory(&desc, sizeof(desc));
+		desc.ArraySize = 1;
+		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		desc.Width = Width;
+		desc.Height = Height;
+		desc.MipLevels = 1;
+		desc.SampleDesc.Count = 1;
+		desc.SampleDesc.Quality = 0;
+		desc.BindFlags = 0;
+		desc.CPUAccessFlags = 0;
+		desc.Usage = D3D11_USAGE_DEFAULT;
+
+		ID3D11Texture2D* pTexture = nullptr;
+		hr = d3d11Device->CreateTexture2D(&desc, nullptr, &pTexture);
+		if (pTexture)
+		{
+			std::string filename = std::string(std::to_string(start++)) + ".png";
+			d3d11DevCon->CopyResource(pTexture, pSurface);
+			hr = D3DX11SaveTextureToFileA(d3d11DevCon, pTexture, D3DX11_IFF_PNG, (LPSTR)filename.c_str());
+			pTexture->Release();
+		}
+		pSurface->Release();
+	}
 
 	//Present the backbuffer to the screen
 	SwapChain->Present(0, 0);
